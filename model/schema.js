@@ -21,6 +21,18 @@ const userschema=new mongoose.Schema({
         type:String,
     
     },
+    razorpay_payment_id:{
+        type:String,
+    
+    },
+    razorpay_order_id:{
+        type:String,
+    
+    },
+    razorpay_signature:{
+        type:String,
+    
+    },
     payment_status:{
         type:Boolean,
     

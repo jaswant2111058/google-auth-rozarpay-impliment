@@ -9,8 +9,13 @@ const path = require("path");
 require("./connection/conn");
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
-const schema = require("./model/schema");
-const adnew={};
+const schema = require("./model/schema")
+const Razorpay=require("razorpay");
+var instance = new Razorpay({
+  key_id: 'rzp_test_lIAffka8ZIqfaU',
+  key_secret: 'lIhTEeoU53SwaQIlITg8qT2y',
+});
+//const adnew={};
 
 
 const static1 = path.join(__dirname,"./login")
@@ -50,7 +55,7 @@ app.get('/auth/google',
 
 app.get( '/auth/google/callback',
   passport.authenticate( 'google', {
-    successRedirect: '/loged-in',
+    successRedirect: '/filldetail',
     failureRedirect: '/auth/google/failure'
   })
 );
@@ -68,7 +73,7 @@ app.get( '/auth/google/callback',
 //   res.status(201).send(adnew);
 //   console.log(adnew);
 // });
-  app.get('/loged-in',isLoggedIn,(req,res)=>{
+  app.get('/filldetail',isLoggedIn,(req,res)=>{
     res.sendFile(static1+"/filldetail.html")
   })
 app.post('/filldetail' , isLoggedIn, async (req,res)=>
@@ -79,9 +84,9 @@ app.post('/filldetail' , isLoggedIn, async (req,res)=>
   
   const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name} 
   const usr = new schema(detail);
-    adnew = await usr.save();
-   //res.send(adnew);
-  res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
+   const adnew = await usr.save();
+  // res.send(adnew);
+ res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
   res.status(201);
  
     }
@@ -97,10 +102,51 @@ app.get('/review', isLoggedIn,async (req, res) => {
   // res.sendFile(static1+'/filldetail.html');
  });
 
-app.get('/payment', isLoggedIn, (req, res) => {
-  res.sendFile("");
-})
+app.get('/payment', isLoggedIn,  (req, res) => {
+  let options = {
+    amount: 1,  // amount in the smallest currency unit
+    currency: "INR",
+    receipt: "order_rcptid_11"
+  };
+  instance.orders.create(options, function(err, order) {
+    console.log(order);
+    res.send({orderID:order.id})
+  });
+  // res.sendFile("");
 
+})
+app.post("/api/payment/verify", async (req,res)=>{
+
+  let body=req.body.response.razorpay_order_id + "|" + req.body.response.razorpay_payment_id;
+ 
+   var crypto = require("crypto");
+   var expectedSignature = crypto.createHmac('sha256', 'lIhTEeoU53SwaQIlITg8qT2y')
+                                   .update(body.toString())
+                                   .digest('hex');
+                                   console.log("sig received " ,req.body.response.razorpay_signature);
+                                   console.log("sig generated " ,expectedSignature);
+   var response = {"signatureIsValid":"false"}
+   if(expectedSignature === req.body.response.razorpay_signature)
+    response={"signatureIsValid":"true"}
+    {
+      try{
+    const team_member_email=req.body.tmname;
+    const team_member_name=req.body.tmemail;
+    
+    const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name} 
+    const usr = new schema(detail);
+     const adnew = await usr.save();
+     res.send(adnew);
+   //res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
+    res.status(201);
+   
+      }
+        catch(error){
+          res.status(400).send(error);
+        }
+  }
+       res.send(response);
+   });
 app.get('/logout', (req, res) => {
   req.logout();
   req.session.destroy();
