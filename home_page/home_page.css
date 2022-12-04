@@ -1,0 +1,29 @@
+body
+{
+    background-image: url("https://images.pexels.com/photos/949587/pexels-photo-949587.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1");
+}
+#div2
+{   padding: auto;
+    background-color: transparent;
+    text-align: center;
+    height: 380px;
+    width: 395px;
+    padding: 10px;
+    border-color: black;
+    
+    
+}
+#divm
+{
+    padding: 190px;
+}
+button
+{
+    align-items: center;
+    color: white;
+    background-color: rgb(9, 87, 132);
+    font-size: 20px;
+    
+
+
+}
