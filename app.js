@@ -61,22 +61,10 @@ app.get( '/auth/google/callback',
 );
 
 
-// app.post('/loged-in', async (req, res) => {
-//   // const team_member_email=req.body.team_member_email;
-//   // const team_member_name=req.body.team_member_name;
-//  //const detail= {leader_name:req.user.displayName,leader_email:req.user.email,ima_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name} 
-  
-  
-//   const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture}
-//    const user = new schema(detail);
-//     const adnew =user.save(); 
-//   res.status(201).send(adnew);
-//   console.log(adnew);
-// });
   app.get('/filldetail',isLoggedIn,(req,res)=>{
     res.sendFile(static1+"/filldetail.html")
   })
-app.post('/filldetail' , isLoggedIn, async (req,res)=>
+app.post('/filldetail', isLoggedIn, async (req,res)=>
 {
     try{
   const team_member_email=req.body.tmname;
@@ -86,8 +74,9 @@ app.post('/filldetail' , isLoggedIn, async (req,res)=>
   const usr = new schema(detail);
    const adnew = await usr.save();
   // res.send(adnew);
- res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
+ //res.send(`<html><h1>DETAIL<h1> <br><img src='${adnew.img_url}'<h5>LEARDER NAME : ${adnew.leader_name}</h5><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
   res.status(201);
+  res.sendFile(static1+"/payment.html")  
  
     }
       catch(error){
@@ -97,12 +86,11 @@ app.post('/filldetail' , isLoggedIn, async (req,res)=>
 
 app.get('/review', isLoggedIn,async (req, res) => {
   
-   
-        res.send('<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>')
+   res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h5>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h5><br><h5>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h5><br><h5>TEAM MEMBER NAME : ${adnew.team_member_name}</h5><br><h5>PAYMENT : ${adnew.payment_status}</h5><html>`)
   // res.sendFile(static1+'/filldetail.html');
  });
 
-app.get('/payment', isLoggedIn,  (req, res) => {
+app.get('/create/orderId', isLoggedIn,  (req, res) => {
   let options = {
     amount: 1,  // amount in the smallest currency unit
     currency: "INR",
@@ -117,6 +105,8 @@ app.get('/payment', isLoggedIn,  (req, res) => {
 })
 app.post("/api/payment/verify", async (req,res)=>{
 
+  const payment_status= "";
+
   let body=req.body.response.razorpay_order_id + "|" + req.body.response.razorpay_payment_id;
  
    var crypto = require("crypto");
@@ -128,16 +118,22 @@ app.post("/api/payment/verify", async (req,res)=>{
    var response = {"signatureIsValid":"false"}
    if(expectedSignature === req.body.response.razorpay_signature)
     response={"signatureIsValid":"true"}
-    {
+if(response.signatureIsValid==true)
+ {
+     payment_status="succesfull";
+ }
+      else 
+      payment_status="unsuccesfull";
+ {
       try{
     const team_member_email=req.body.tmname;
     const team_member_name=req.body.tmemail;
     
-    const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name} 
+    const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name,payment_status:payment_status} 
     const usr = new schema(detail);
      const adnew = await usr.save();
      res.send(adnew);
-   //res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
+   res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
     res.status(201);
    
       }

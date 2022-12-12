@@ -34,7 +34,7 @@ const userschema=new mongoose.Schema({
     
     },
     payment_status:{
-        type:Boolean,
+        type:String,
     
     }
 });
