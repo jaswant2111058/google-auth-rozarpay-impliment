@@ -90,7 +90,7 @@ app.get('/review', isLoggedIn,async (req, res) => {
   // res.sendFile(static1+'/filldetail.html');
  });
 
-app.get('/create/orderId', isLoggedIn,  (req, res) => {
+app.post('/create/orderId', isLoggedIn,  (req, res) => {
   let options = {
     amount: 1,  // amount in the smallest currency unit
     currency: "INR",
