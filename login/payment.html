@@ -24,7 +24,7 @@
 <script>
 
 document.getElementById("pay-button").addEventListener("click", function() {
-	document.getElementById("pay-button").disabled = true;
+	onclick=window.location.href='/create/orderId';
 })
 var options = {
 	"key": "rzp_test_lIAffka8ZIqfaU",
@@ -35,6 +35,8 @@ var options = {
 	"handler": function (response){
 		console.log(response)
 		alert("This step of Payment Succeeded");
+		window.location.href='/review';
+
 	},
 	
 	

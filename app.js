@@ -20,7 +20,7 @@ var instance = new Razorpay({
 
 const static1 = path.join(__dirname,"./login")
 const static2 = path.join(__dirname,"./home_page")
-const static3 = path.join(__dirname,"./new registration")
+const static3 = path.join(__dirname,"./public")
 
  app.use(express.static(static1));
  app.use(express.static(static3));
@@ -29,7 +29,7 @@ const static3 = path.join(__dirname,"./new registration")
 
 
 function isLoggedIn(req, res, next) {
-  req.user ? next() : res.sendStatus(401);
+  req.user ? next() : res.redirect("/login");
 }
 
 
@@ -55,93 +55,108 @@ app.get('/auth/google',
 
 app.get( '/auth/google/callback',
   passport.authenticate( 'google', {
-    successRedirect: '/filldetail',
+    successRedirect: '/filldetails',
     failureRedirect: '/auth/google/failure'
   })
 );
 
 
-  app.get('/filldetail',isLoggedIn,(req,res)=>{
-    res.sendFile(static1+"/filldetail.html")
+  app.get('/filldetails',isLoggedIn, async (req,res)=>{
+
+    // const adnew = await schema.findOne({leader_email:req.user.email});
+    //       if(adnew){
+    //       res.sendFile(static1+"/filldetail.html")
+    //      //  res.send("eamil allready register")
+    //       }
+    //       else{
+                 
+    //   res.sendFile(static1+"/filldetail.html")
+    // // res.send("eamil allready register")
+    //       }
+      res.sendFile(static1+"/filldetail.html");
   })
 app.post('/filldetail', isLoggedIn, async (req,res)=>
 {
-    try{
+
   const team_member_email=req.body.tmname;
   const team_member_name=req.body.tmemail;
+  const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name,payment_status:"unseccessful",razorpay_order_id:"none",razorpay_payment_id:"none",} 
   
-  const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name} 
+    try{
   const usr = new schema(detail);
    const adnew = await usr.save();
-  // res.send(adnew);
- //res.send(`<html><h1>DETAIL<h1> <br><img src='${adnew.img_url}'<h5>LEARDER NAME : ${adnew.leader_name}</h5><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
-  res.status(201);
-  res.sendFile(static1+"/payment.html")  
- 
+  // res.status(201).send(adnew);
+  res.redirect("/create/orderId") 
+// res.sendFile(static1+"/pay.html");
     }
       catch(error){
         res.status(400).send(error);
       }
 })
 
-app.get('/review', isLoggedIn,async (req, res) => {
-  
-   res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h5>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h5><br><h5>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h5><br><h5>TEAM MEMBER NAME : ${adnew.team_member_name}</h5><br><h5>PAYMENT : ${adnew.payment_status}</h5><html>`)
+
+
+app.post('/review', isLoggedIn,async (req, res) => {
+
+   //res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h5>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h5><br><h5>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h5><br><h5>TEAM MEMBER NAME : ${adnew.team_member_name}</h5><br><h5>PAYMENT : ${adnew.payment_status}</h5><html>`)
   // res.sendFile(static1+'/filldetail.html');
+ // const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,payment_status:payment_status} 
+  const keep = await schema.updateOne({leader_email:req.user.email},{payment_status:"successfull"});
+   const adnew = await schema.findOne({leader_email:req.user.email});
+   res.send(adnew);
  });
 
-app.post('/create/orderId', isLoggedIn,  (req, res) => {
+app.get('/create/orderId', isLoggedIn,  async (req, res) => {
+  
   let options = {
-    amount: 1,  // amount in the smallest currency unit
+    amount: 2000,  // amount in the smallest currency unit
     currency: "INR",
     receipt: "order_rcptid_11"
   };
-  instance.orders.create(options, function(err, order) {
+  instance.orders.create(options, async function(err, order) {
     console.log(order);
-    res.send({orderID:order.id})
+   // res.send({orderId:order.id})
+    try{
+    const adnew = await schema.updateOne({leader_email:req.user.email},{razorpay_order_id:order.id});
+    //res.send(adnew);
+    res.render("payment",{order:order.id});
+    }
+    catch(e){
+    console.log("error");
+    }
   });
-  // res.sendFile("");
+ 
 
 })
 app.post("/api/payment/verify", async (req,res)=>{
 
-  const payment_status= "";
-
-  let body=req.body.response.razorpay_order_id + "|" + req.body.response.razorpay_payment_id;
+  //const adnew = await schema.findOne({leader_email:req.user.email})
+  let body=req.body.razorpay_order_id + "|" + req.body.razorpay_payment_id;
  
    var crypto = require("crypto");
    var expectedSignature = crypto.createHmac('sha256', 'lIhTEeoU53SwaQIlITg8qT2y')
                                    .update(body.toString())
                                    .digest('hex');
-                                   console.log("sig received " ,req.body.response.razorpay_signature);
+                                   console.log("sig received " ,req.body.razorpay_signature);
                                    console.log("sig generated " ,expectedSignature);
    var response = {"signatureIsValid":"false"}
-   if(expectedSignature === req.body.response.razorpay_signature)
-    response={"signatureIsValid":"true"}
+   if(expectedSignature === req.body.razorpay_signature)
+    var response={"signatureIsValid":"true"}
 if(response.signatureIsValid==true)
  {
-     payment_status="succesfull";
+  const keep = await schema.updateOne({leader_email:req.user.email},{payment_status:"successfull"});
+  //const adnew = await schema.findOne({leader_email:req.user.email});
+  console.log(keep);
+  res.send(keep);
  }
       else 
-      payment_status="unsuccesfull";
- {
-      try{
-    const team_member_email=req.body.tmname;
-    const team_member_name=req.body.tmemail;
-    
-    const detail= {leader_name:req.user.displayName,leader_email:req.user.email,img_url:req.user.picture,team_member_email:team_member_email,team_member_name:team_member_name,payment_status:payment_status} 
-    const usr = new schema(detail);
-     const adnew = await usr.save();
-     res.send(adnew);
-   res.send(`<html><h1>DETAIL<h1> <br><img src="${adnew.img_url}" <h3>LEARDER NAME : ${adnew.leader_name}</h3><br><h3>LEARDER EMAIL : ${adnew.leader_email}</h3><br><h3>TEAM MEMBER EMAIL : ${adnew.team_member_email}</h3><br><h3>TEAM MEMBER NAME : ${adnew.team_member_name}</h3><br><h3>PAYMENT : ${adnew.payment_status}</h3><html>`);
-    res.status(201);
+     { const keep = await schema.updateOne({leader_email:req.user.email},{payment_status:"unsuccessfull"});
+     console.log(keep)
+     res.send(keep);
+}
    
-      }
-        catch(error){
-          res.status(400).send(error);
-        }
-  }
-       res.send(response);
+  
+       
    });
 app.get('/logout', (req, res) => {
   req.logout();
