@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+require('dotenv').config();
 const session = require('express-session');
 const passport = require('passport');
 const port = process.env.PORT||5000;
@@ -12,8 +13,8 @@ app.use(express.urlencoded({extended:false}));
 const schema = require("./model/schema")
 const Razorpay=require("razorpay");
 var instance = new Razorpay({
-  key_id: 'rzp_test_lIAffka8ZIqfaU',
-  key_secret: 'lIhTEeoU53SwaQIlITg8qT2y',
+  key_id: process.env.KEY_ID,
+  key_secret: process.env.KEY_SECRET,
 });
 //const adnew={};
 
@@ -26,7 +27,17 @@ const static3 = path.join(__dirname,"./public")
  app.use(express.static(static3));
  app.use(express.static(static2));
 
+ var nodemailer = require('nodemailer');
 
+ var transporter = nodemailer.createTransport({
+   service: 'gmail',
+   auth: {
+     user: "jkstar0123@gmail.com",
+     pass: process.env.EMAIL_PASS
+   }
+ });
+ 
+ 
 
 function isLoggedIn(req, res, next) {
   req.user ? next() : res.redirect("/login");
@@ -40,7 +51,7 @@ function emailverification(req,res,next)
   {
       mail = email[i]+mail;
   }
-  if(mail=="akgec.ac.inundefined")
+  if(mail==process.env.MAIL_KEY)
   {
     next();
   }
@@ -48,7 +59,7 @@ function emailverification(req,res,next)
 
 }
 
-app.use(session({ secret: 'jassi', resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -91,8 +102,8 @@ app.get( '/auth/google/callback',
     //       }
     //       else{
                  
-    //   res.sendFile(static1+"/filldetail.html")
-    // // res.send("eamil allready register")
+    //  // res.sendFile(static1+"/filldetail.html")
+    //  res.send("eamil allready register")
     //       }
       res.sendFile(static1+"/filldetail.html");
   })
@@ -150,13 +161,13 @@ app.get('/create/orderId', isLoggedIn,emailverification,  async (req, res) => {
  
 
 })
-app.post("/api/payment/verify", async (req,res)=>{
+app.post("/api/payment/verify" , isLoggedIn,emailverification,async (req,res)=>{
 
   //const adnew = await schema.findOne({leader_email:req.user.email})
   let body=req.body.razorpay_order_id + "|" + req.body.razorpay_payment_id;
  
    var crypto = require("crypto");
-   var expectedSignature = crypto.createHmac('sha256', 'lIhTEeoU53SwaQIlITg8qT2y')
+   var expectedSignature = crypto.createHmac('sha256',process.env.KEY_SECRET)
                                    .update(body.toString())
                                    .digest('hex');
                                    console.log("sig received " ,req.body.razorpay_signature);
@@ -169,6 +180,20 @@ app.post("/api/payment/verify", async (req,res)=>{
   const adnew = await schema.findOne({leader_email:req.user.email});
  
   res.send(adnew);
+  var mailOptions = {
+    from: 'jkstar0123@gmail.com',
+    to: `${adnew.leader_email}`,
+    subject: 'Sending Email using Node.js',
+    text: `registration successful${adnew}`
+  };
+  
+  transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
  }
       else 
      { const keep = await schema.updateOne({leader_email:req.user.email},{payment_status:"unsuccessfull"});
